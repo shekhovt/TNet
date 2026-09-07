@@ -1,10 +1,12 @@
-# Scalable Binary-Quantized Neural Networks for Energy-Efficient Vision
+# Scalable Binary-Quantized Neural Networks for Energy-Efficient Vision (TNet)
 
 Reference implementation for the paper
 
 > **Scalable Binary-Quantized Neural Networks for Energy-Efficient Vision**
 > Alexander Shekhovtsov and Štěpán Obdržálek, Czech Technical University in Prague.
 > [ECML-PKDD 2026](https://ecmlpkdd.org/2026/) (research track).
+
+Project page: <https://cmp.felk.cvut.cz/~shekhovt/TNet/> — paper, BibTeX, slides and results.
 
 A unified framework for training vision models with **integer weights and
 activations** on a fixed quantization grid `{0, 1, …, K-1}` — no adaptive shift or
@@ -13,12 +15,12 @@ trained directly rather than as a side effect of preserving real-valued signals.
 
 ![Top-1 accuracy versus total energy per image on ImageNet-1k](energy_ECML/results/figures/accuracy-vs-tee.svg)
 
-Top-1 accuracy against total energy per image — weight and feature-map memory movement
-plus compute, priced at 7 nm. Every point comes out of the same cost model, evaluated
-from each network's layer geometry and bit widths rather than transcribed from its paper,
-so the methods are compared on one axis. At about 70 % top-1, TNet costs 5.2 mJ per image
-against 77.4 mJ for a full-precision ResNet-18 and 7.2 mJ for the strongest binary
-baseline at the same accuracy.
+**Updated and Extended Evaluation: Accuracy vs Total Energy Estimate.** Total energy per
+image is weight and feature-map memory movement plus compute, priced at 7 nm. Every point
+comes out of the same cost model, evaluated from each network's layer geometry and bit
+widths rather than transcribed from its paper, so the methods are compared on one axis.
+At about 70 % top-1, TNet costs 5.2 mJ per image against 77.4 mJ for a full-precision
+ResNet-18 and 7.2 mJ for the strongest binary baseline at the same accuracy.
 
 The other two views — accuracy against compute alone and against memory movement — and
 the full table, with each row's memory and energy split out, are in
