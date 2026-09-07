@@ -5,6 +5,10 @@ Reference implementation for the paper
 > **Scalable Binary-Quantized Neural Networks for Energy-Efficient Vision**
 > Alexander Shekhovtsov and Štěpán Obdržálek, Czech Technical University in Prague.
 > [ECML-PKDD 2026](https://ecmlpkdd.org/2026/) (research track).
+> *Machine Learning and Knowledge Discovery in Databases. Research Track*, Lecture Notes
+> in Computer Science, Springer Nature Switzerland, Cham, pp. 253–270.
+> doi:[10.1007/978-3-032-37664-0_15](https://doi.org/10.1007/978-3-032-37664-0_15)
+> (published version; subscription required).
 
 Project page: <https://cmp.felk.cvut.cz/~shekhovt/TNet/> — paper, BibTeX, slides and results.
 
@@ -267,14 +271,20 @@ corresponding figures and summary tables.
 @inproceedings{shekhovtsov2026scalable,
   title     = {Scalable Binary-Quantized Neural Networks for Energy-Efficient Vision},
   author    = {Shekhovtsov, Alexander and Obdr{\v{z}}{\'a}lek, {\v{S}}t{\v{e}}p{\'a}n},
-  booktitle = {Machine Learning and Knowledge Discovery in Databases (ECML-PKDD)},
+  booktitle = {Machine Learning and Knowledge Discovery in Databases. Research Track},
+  series    = {Lecture Notes in Computer Science},
+  pages     = {253--270},
+  publisher = {Springer Nature Switzerland},
+  address   = {Cham},
   year      = {2026},
-  url       = {https://ecmlpkdd.org/2026/}
+  doi       = {10.1007/978-3-032-37664-0_15},
+  isbn      = {978-3-032-37664-0}
 }
 ```
 
-The proceedings volume, pages and DOI are not assigned yet; this entry will be updated
-once they are.
+The Lecture Notes in Computer Science volume number is not yet filled in; everything else
+is Crossref's record for the DOI. A free authors' version of the PDF is on the
+[project page](https://cmp.felk.cvut.cz/~shekhovt/TNet/).
 
 ## License
 
