@@ -1,0 +1,32 @@
+# relimport: relative-import bootstrap (https://pypi.org/project/relimport/).
+# Co-developers can `pip install -e /path/to/relimport` over this to use a local checkout.
+relimport
+
+# Core
+torch>=2.7
+torchvision
+numpy
+scipy
+pyparsing
+transformers
+Pillow
+
+# Plotting / analysis
+matplotlib
+adjustText      # used by experiments/exp_plotting.py for non-overlapping plot labels
+
+# GPU device selection (used by device.py to auto-pick a free GPU)
+nvitop
+psutil
+
+# Runtime dependencies pulled in by torch but not always present
+mpmath<1.4      # sympy compatibility (torch >= 2.7 requires sympy which requires mpmath)
+networkx        # required by torch
+typing_extensions>=4.0  # required by torch >= 2.7
+
+# Fast ImageNet data loading (optional; required only for ImageNet training)
+# ffcv
+
+# Model inspection / visualization (optional, used by utilities/)
+# torchview
+# torchviz

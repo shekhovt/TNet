@@ -1,0 +1,49 @@
+submission/
+## Core latex/pdflatex auxiliary files:
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
+*.pdf
+*.dvi
+*.xdv
+*-converted-to.*
+
+## Bibliography auxiliary files (bibtex/biblatex/biber):
+*.bbl
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+*.run.xml
+
+## Build tool auxiliary files:
+*.fdb_latexmk
+*.synctex
+*.synctex(busy)
+*.synctex.gz
+*.synctex.gz(busy)
+*.pdfsync
+_minted/
+res
+res/
+*.png
+*.pyc
+# requirements.txt must be tracked: README's install step uses it
+!requirements.txt
+*.zip
+submission/
+arxiv/
+.DS_Store
+_minted*
+.venv/
+*.pyc
+__pycache__/
