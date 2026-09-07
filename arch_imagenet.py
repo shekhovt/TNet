@@ -1168,7 +1168,7 @@ class ResNet18(EClassificationNet):
         # print(self)
 
 
-class MobileNetv1(EClassificationNet):
+class MobileNetv1(EClassificationNet, ESequential):
 
     @classmethod
     def block(cls, in_channels:int, out_channels:int, o, next_o=None, stride=2, kernel_size = 3, **kwargs):

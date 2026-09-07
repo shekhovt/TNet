@@ -7,6 +7,14 @@
 # is de-facto an established expectation of the research community. Opensource code as
 # part of publication should not affect the performance of an invention both from a
 # commercial and IP point of view.
+
+# --- What this file is -----------------------------------------------------------------------
+# The original energy script, kept UNCHANGED as the reference implementation -- the file name is
+# historical and describes it poorly. Two things in it are load-bearing: fuse_model(), which
+# walks a constructed network into the list of fused convolutions this whole package is defined
+# on and which the native entry path still calls; and net_calc_energy_stats(), which prints
+# energy totals and is the oracle tests/test_reference.py checks the current cost model against.
+
 import os, sys
 import relimport
 
@@ -22,13 +30,13 @@ from typing import Dict, Callable, Union
 import logging
 
 #________________Quant________________________
-from .tools import *
-from .train import setup_o, o_from_str
-from .arch_imagenet import create_net, TowerBlock, CatnMerge, BiNealBlock
-from .methods import compile_args
-from .layers import QReLU, ScaleBias, QConv2d, EClassificationNet, ESequential
-from .layers import *
-#from .op_counter import OpCounter
+from ..tools import *
+from ..train import setup_o, o_from_str
+from ..arch_imagenet import create_net, TowerBlock, CatnMerge, BiNealBlock
+from ..methods import compile_args
+from ..layers import QReLU, ScaleBias, QConv2d, EClassificationNet, ESequential
+from ..layers import *
+#from ..op_counter import OpCounter
 from collections import defaultdict
 from dataclasses import dataclass
     
@@ -653,4 +661,5 @@ def teest_net():
 
 # profile_all()
 
-profile_energies()
+if __run__:
+    profile_energies()

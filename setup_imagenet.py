@@ -7,6 +7,7 @@
 # is de-facto an established expectation of the research community. Opensource code as
 # part of publication should not affect the performance of an invention both from a
 # commercial and IP point of view.
+import os
 from typing import Optional
 import torchvision
 # import torchvision.transforms as transforms
@@ -43,7 +44,7 @@ from . import device
 dataroot = ''
 datapath = {'imagenette-160':'../data/imagenette/imagenette2-160/',
             'imagenette-320':'../data/imagenette/imagenette2-320/',
-            'imagenet':'../data/imagenet/imagenet_pytorch/'}
+            'imagenet':'data/'}
 
 
 class SubclassesDataset(torchvision.datasets.ImageFolder):
@@ -70,13 +71,21 @@ class SubclassesDataset(torchvision.datasets.ImageFolder):
 # def subclasses_image_folder(dat:torchvision.datasets.ImageFolder, selected_class_indices):
     
 
-def map_path(path):
-    # Hook to redirect the dataset cache (.beton files) to a fast local disk if
-    # desired; identity by default. Override to taste, e.g. by replacing the
-    # dataset root with a local scratch path.
-    return path
+#: Where the FFCV dataset caches (.beton files) are written.  Empty (the default) keeps
+#: each cache beside the dataset it was built from.  Set the TNET_CACHE_ROOT environment
+#: variable to redirect them somewhere writable and shared: dataset directories are often
+#: read-only, and on a cluster a per-node scratch path would rebuild the cache for every
+#: job instead of building it once and reusing it.  The source path is mirrored underneath
+#: the root, so caches for different datasets do not collide.
+CACHE_ROOT = os.environ.get('TNET_CACHE_ROOT', '')
 
-def get_dataset(path, write_mode='smart', max_resolution = None, data_variant = '',  compress_probability=None, jpeg_quality = 90, num_workers = 8, chunk_size=100, subclasses=None):
+def map_path(path):
+    if not CACHE_ROOT:
+        return path
+    parts = [p for p in os.path.normpath(path).split(os.sep) if p not in ('', '..', '.')]
+    return os.path.join(CACHE_ROOT, *parts)
+
+def get_dataset(path, write_mode='smart', max_resolution = None, data_variant = '',  compress_probability=None, jpeg_quality = 90, num_workers = 2, chunk_size=100, subclasses=None):
     localpath = map_path(path) # save DB on the local drive
     if data_variant == '':
         write_path = localpath + f'-{max_resolution}.beton'
@@ -304,9 +313,9 @@ def create_data(o):
         IMAGENET_TEST_SCALE = 224/256
 
         print(f'input_size={input_size}')
-        train_set = get_dataset(datadir + '/train', max_resolution=store_size, data_variant = data_variant, subclasses = subclasses)
-        val_set = get_dataset(datadir + '/val', max_resolution=store_size, data_variant = data_variant, subclasses = subclasses)
-        test_set = get_dataset(datadir + '/val', max_resolution=store_size, data_variant = data_variant, subclasses = subclasses) # MISSIN test set currently
+        train_set = get_dataset(datadir + '/train', max_resolution=store_size, data_variant = data_variant, subclasses = subclasses, num_workers = o.workers)
+        val_set = get_dataset(datadir + '/val', max_resolution=store_size, data_variant = data_variant, subclasses = subclasses, num_workers = o.workers)
+        test_set = get_dataset(datadir + '/val', max_resolution=store_size, data_variant = data_variant, subclasses = subclasses, num_workers = o.workers) # MISSIN test set currently
 
          
         # decoder = RandomBetaCropRGBImageDecoder((input_size, input_size), scale = np.array((0.3, 1.0))) # a2
@@ -417,7 +426,7 @@ def create_data(o):
         def test_like_loader(set, order):
             return ffcv.loader.Loader(set,  batch_size=batch_size, num_workers=num_workers, order=order, pipelines=test_pipelines(), drop_last=False)
 
-        num_workers = 8
+        num_workers = o.workers
         batches_ahead = 2
         # torch.manual_seed(0)
         # np.random.seed(0)
@@ -450,8 +459,7 @@ def create_data(o):
         normalize = v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
         print('Pytorch data loaders')
-        num_workers = 16
-            
+
         transform = v2.Compose([
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
@@ -480,13 +488,13 @@ def create_data(o):
         val_set = get_dataset_PT(datadir + '/val/', subclasses, test_transform)
         test_set = val_set
 
-        # o.input_shape = [3, size, size]
+        o.input_shape = [3, input_size, input_size]
         o.num_classes = num_classes
             
         # torch.manual_seed(o.data_seed) # for the training-val split
         # train_set, val_set = torch.utils.data.random_split(train_set, [0.8, 0.2])
         # dataloaders
-        num_workers = 16
+        num_workers = o.workers
         PW = False
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True, pin_memory=True, persistent_workers = PW, prefetch_factor=4)
         #!!! shuffle must be the same for train_loader_test as for train_loader

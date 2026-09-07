@@ -244,7 +244,16 @@ class EWA_BN(torch.nn.BatchNorm2d):
 # Norm = EWA_BN
 Norm = nn.BatchNorm2d
 
-def make_norm(channels, learnable=True, weight = 1.0, bias = 0.0, init_only = False, eps=0.0, Norm=Norm): # DEBUG (eps=0 was the default, if it fails hard we need a better fix)
+# eps=0 was the intended default: variance statistics should be trusted as computed, and a
+# degenerate (zero) variance is meant to blow up loudly rather than get silently smoothed over
+# by an eps chosen for numerical comfort. Newer torch (>=2.13) rejects eps=0 outright in
+# batch_norm ("eps must be positive during training"), so we pass the smallest positive
+# float32 value instead of 0.0 -- it's a no-op against any real variance, and a truly zero
+# variance still blows up (rsqrt(tiny) is enormous) instead of being masked. See
+# the RCI migration notes.
+EPS_MIN = torch.finfo(torch.float32).tiny
+
+def make_norm(channels, learnable=True, weight = 1.0, bias = 0.0, init_only = False, eps=EPS_MIN, Norm=Norm):
     if True: # BN
         # Norm = nn.BatchNorm2d
         if learnable:

@@ -7,6 +7,13 @@
 # is de-facto an established expectation of the research community. Opensource code as
 # part of publication should not affect the performance of an invention both from a
 # commercial and IP point of view.
+
+# --- What this file is -----------------------------------------------------------------------
+# An alternative memory-traffic model: how many bits a tiled convolution must move when the tile
+# size is chosen optimally. Kept unchanged and deliberately NOT connected -- the cost model
+# counts one pass over each tensor instead, and this is the implementation the tiling-optimal
+# option would use if it were ever adopted.
+
 #%%
 
 import math

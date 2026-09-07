@@ -67,7 +67,7 @@ ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(ga
 # ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --net 'QResNet18(gate=Tower8s)' --method ST --epochs 200 --lr 0.0025 -A 2 -W 2 --cudagraph --fp16 --distil -v 'T0.25'"]
 
 # rr = plot(ll,title='Estimators');
-plot(ll, title="", experiment="Quant-GCPR25/exp/estimators", loc=4);
+plot(ll, title="", experiment="estimators", loc=4);
 test_variant = 'best_val_A1-test.pkl'
 print(load_test_results(ll[0], test_variant=test_variant))
 print(load_test_results(ll[1], test_variant=test_variant))
@@ -89,7 +89,7 @@ ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(ga
 # ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --net 'QResNet18(gate=Tower8s)' --method ST --epochs 200 --lr 0.0025 -A 2 -W 2 --cudagraph --fp16 --distil -v 'T0.25'"]
 
 # rr = plot(ll,title='Mean Pretraining');
-plot(ll, title="Mean Pretraining", experiment="Quant-GCPR25/exp/preatraining-mean", loc=4);
+plot(ll, title="Mean Pretraining", experiment="preatraining-mean", loc=4);
 
 # %%
 # Clamp pretraining 
@@ -99,7 +99,7 @@ ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(ga
 ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST --pm 'Clamp(epochs=100)' --epochs 200 --lr 0.005 -A 2 -W 2 --cudagraph --fp16 --distil  --compile"]
 ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST --pm 'Clamp(epochs=150)' --epochs 200 --lr 0.005 -A 2 -W 2 --cudagraph --fp16 --distil  --compile"]
 # rr = plot(ll,title='Clamp Pretraining');
-plot(ll, title="Clamp Pretraining", experiment="Quant-GCPR25/exp/preatraining-clamp", loc=4);
+plot(ll, title="Clamp Pretraining", experiment="preatraining-clamp", loc=4);
 
 
 # %%
@@ -143,7 +143,7 @@ plot(ll, title="",experiment="res/fig/plots/mvu-2b",acc=False,Abottom=55);
 
 # #%%
 # # rr = plot(ll,title='Estimators');
-# plot(ll, title="", experiment="Quant-GCPR25/exp/estimators", loc=4);
+# plot(ll, title="", experiment="estimators", loc=4);
 # test_variant = 'best_val_A1-test.pkl'
 # print(load_test_results(ll[0], test_variant=test_variant))
 # print(load_test_results(ll[1], test_variant=test_variant))

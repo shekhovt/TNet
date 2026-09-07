@@ -52,7 +52,7 @@ ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(g
 ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 2 -W 2 --cudagraph --fp16 --distil --Adam_eps 1e-8", "TNet A1-2 W1")]
 # Note: ReLU has the same training loss and accuracy curve as 3/4 bit but generalizes better...
 # rr = plot(ll);
-plot(ll, title="", experiment="Quant-GCPR25/exp/convergence-100", loc=0, acc=False, Abottom=50);
+plot(ll, title="", experiment="convergence-100", loc=0, acc=False, Abottom=50);
 
 
 # %% Old vs new parameter setup
@@ -89,10 +89,9 @@ ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(g
 # ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --fp16 --distil -v 'T0.25'", "TNet 3bit MD-det")]
 # ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --fp16 --distil --Adam_eps 1e-8", "TNet 3bit Adam1e-8")]
 # ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --fp16 --distil -v 'T0.25'", "TNet 3bit MD")]
-# @ marr
 # ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 2 -W 2 --cudagraph --fp16 --distil --Adam_eps 1e-8", "TNet 1-2/1b")]
 # ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --fp16 --distil --noise_sigma_W 0.33 --MD"]
 # >> repeat everything with --Adam_eps 1e-8
 # rr = plot(ll);
-plot(ll, title="", experiment="Quant-GCPR25/exp/MD", loc=0, acc=False);
+plot(ll, title="", experiment="MD", loc=0, acc=False);
 # %%

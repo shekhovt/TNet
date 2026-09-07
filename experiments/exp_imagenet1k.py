@@ -31,7 +31,7 @@ ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=T
 #ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s,m=2)' --method ST-det -n U --epochs 200 --lr 0.003 --compile -A 4 -W 2 --cudagraph --fp16 --distil --Adam_eps 1e-8 --seed 2"]
 # >>
 #
-rr = plot(ll, title="", experiment="Quant-GCPR25/exp/width", acc=None);
+rr = plot(ll, title="", experiment="width", acc=None);
 val_summary(rr)
 #%% New Dilation results
 ll =[]
@@ -46,7 +46,7 @@ ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=T
 # ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s,Dilation=True)' --method ST --epochs 200 --lr 0.0025 --compile -A 8 -W 2 --cudagraph --fp16 --distil -v 'T0.25'"]
 # ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s,Dilation=True)' --method ST-det -n U --epochs 200 --lr 0.005 --compile -A 4 -W 4 --cudagraph --fp16 --distil -v 'T0.25'"]
 
-rr = plot(ll, title="", experiment="Quant-GCPR25/exp/distill-new", acc=None);
+rr = plot(ll, title="", experiment="distill-new", acc=None);
 val_summary(rr)
 #%%
 
@@ -60,7 +60,7 @@ ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.005 --compile -A 8 -W 8 --cudagraph --fp16 --distil -v 'T0.25'", "TNet A3 W3")]
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.005 --compile -A 4 -W 4 --cudagraph --fp16 --distil -v 'T0.25'", "TNet A2 W2")]
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.005 --compile -A 2 -W 2 --cudagraph --fp16 --distil -v 'T0.25'", "TNet A1-2 W1")]
-rr = plot(ll, title="", experiment="Quant-GCPR25/exp/convergence", acc=None);
+rr = plot(ll, title="", experiment="convergence", acc=None);
 val_summary(rr)
 # %% vs Real, new Setup
 ll = []
@@ -71,7 +71,7 @@ ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.003 --compile -A 8 -W 8 --cudagraph --fp16 --distil --Adam_eps 1e-8", "TNet A3 W3")]
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.003 --compile -A 4 -W 4 --cudagraph --fp16 --distil --Adam_eps 1e-8", "TNet A2 W2")]
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.003 --compile -A 2 -W 2 --cudagraph --fp16 --distil --Adam_eps 1e-8", "TNet A1-2 W1")]
-rr = plot(ll, title="", experiment="Quant-GCPR25/exp/convergence", acc=None);
+rr = plot(ll, title="", experiment="convergence", acc=None);
 val_summary(rr)
 #%%
 ll = []
@@ -135,7 +135,7 @@ ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'resnet18()' --me
 # ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 2 -W 2 --cudagraph --fp16 --distil -T 0.25"]
 
 
-# plot(ll, title="", experiment="Quant-GCPR25/exp/scaling", loc=2)
+# plot(ll, title="", experiment="scaling", loc=2)
 rr = plot(ll, title="")
 val_summary(rr)
 # %%
@@ -246,7 +246,7 @@ ll = []
 ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 100 --lr 0.002 --compile -A 8 -W 8 --cudagraph --distil -T 0.25 --Adam_eps 1e-8 --fp16"]
 ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --distil -T 0.25 --Adam_eps 1e-8 --fp16"]
 ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 300 --lr 0.002 --compile -A 8 -W 8 --cudagraph --distil -T 0.25 --Adam_eps 1e-8 --fp16"]
-# rr = plot(ll, title="",loc=4, experiment="Quant-GCPR25/exp/epochs", Abottom=60)
+# rr = plot(ll, title="",loc=4, experiment="epochs", Abottom=60)
 rr = plot(ll, title="",loc=4, Abottom=60)
 val_summary(rr)
 # %%
@@ -259,7 +259,7 @@ ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=
 # error ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --distil -T 0.1 --Adam_eps 1e-8 --fp16"]
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --distil -T 1 --Adam_eps 1e-8 --fp16", "T=1 distill")]
 ll += [("--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --Adam_eps 1e-8 --fp16", "No distillation")]
-rr = plot(ll, title="", experiment="Quant-GCPR25/exp/distill",loc=4, Abottom=55)
+rr = plot(ll, title="", experiment="distill",loc=4, Abottom=55)
 # %%
 # %%
 # Modifications A8 W8
@@ -299,9 +299,7 @@ ll += ["--batch_size 256 --data 'imagenet(res=512)' --MD --net 'QResNet18(gate=G
 #
 # freeze-in_sb -- poor
 # not expressive enough / not enough parameters?
-# fu>> 
-# fu>> 
-# marr>> out of mem
+# out of mem
 rr = plot(ll, title="",loc=4, Abottom=55)
 val_summary(rr)
 # gr_hist(rr[4])

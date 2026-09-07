@@ -24,9 +24,24 @@ mpmath<1.4      # sympy compatibility (torch >= 2.7 requires sympy which require
 networkx        # required by torch
 typing_extensions>=4.0  # required by torch >= 2.7
 
-# Fast ImageNet data loading (optional; required only for ImageNet training)
-# ffcv
+# Fast ImageNet data loading (optional; required only for ImageNet training).
+# FFCV itself is not a plain pip dependency: its C++ extension is built from source against
+# a system OpenCV and libjpeg-turbo rather than a PyPI wheel -- see "ImageNet: FFCV" in
+# README.md. Its non-compiled Python deps *are* plain pip packages and belong here:
+terminaltables
+pytorch_pfn_extras
+fastargs
+assertpy
+tqdm
+opencv-python-headless  # not opencv-python: that wheel needs libGL, absent on headless machines
+numba
+# The `git clone` + `pip install -e .` build step is in README.md.
+
+# Running the published test suite (energy_ECML/tests/): the validation behind the paper's
+# energy numbers. Not needed to train or to profile a network.
+pytest
 
 # Model inspection / visualization (optional, used by utilities/)
 # torchview
 # torchviz
+# torchscope

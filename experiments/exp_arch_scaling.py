@@ -60,7 +60,7 @@ ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(g
 #
 
 # rr = plot(ll);
-rr = plot(ll, title="", experiment="../tex/fix/scaling/scaling", loc=2)
+rr = plot(ll, title="", experiment="scaling", loc=2)
 
 #%%
 # final validation accuracy vs depth: Normal, Tower-2, Tower-4, Tower-8
@@ -171,7 +171,7 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 # plt.legend()
 plt.tight_layout()
-path = '../tex/fig/scaling/scaling-nice.pdf'
+path = fig_path('scaling', 'scaling-nice')
 force_path(path)
 savefig(path)
 plt.show()
@@ -222,7 +222,7 @@ plt.grid(True, alpha=0.3)
 plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 plt.tight_layout()
-path2 = '../tex/fig/scaling/scaling-params.pdf'
+path2 = fig_path('scaling', 'scaling-params')
 force_path(path2)
 savefig(path2)
 plt.show()
@@ -263,7 +263,7 @@ ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(g
 ll += ["--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower8s)' --method ST-det -n U --epochs 200 --lr 0.002 --compile -A 8 -W 8 --cudagraph --distil -T 0.25 --Adam_eps 1e-8"]
 
 rr = plot(ll, loc=4);
-# plot(ll, title="", experiment="Quant-GCPR25/exp/scaling", loc=2)
+# plot(ll, title="", experiment="scaling", loc=2)
 
 # %%
 # Tower vs Fusion
@@ -352,7 +352,7 @@ ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(g
 ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower,DB=False,order=8,layers=(1,1,1,0))' --method ST --epochs 200 --lr 0.005 -A 2 -W 2 --cudagraph --fp16 --distil -v 'T0.25' --compile", "1 + Tower8 x 6")]
 
 # rr = plot(ll);
-plot(ll, title="", experiment="Quant-GCPR25/exp/scaling-slide", loc="center left", acc=False, bbox_to_anchor = (1,0.5));
+plot(ll, title="", experiment="scaling-slide", loc="center left", acc=False, bbox_to_anchor = (1,0.5));
 # %%
 
 
@@ -376,5 +376,5 @@ ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(g
 # ll += [("--batch_size 256 --data 'imagenet-100(res=256)' --MD --net 'QResNet18(gate=Tower,DB=False,order=8,layers=(1,1,1,0))' --method ST --epochs 200 --lr 0.005 -A 2 -W 2 --cudagraph --fp16 --distil -v 'T0.25' --compile", "1 + Tower8 x 6")]
 
 # rr = plot(ll);
-plot(ll, title="", experiment="Quant-GCPR25/exp/scaling-plain", loc=0, acc=False);
+plot(ll, title="", experiment="scaling-plain", loc=0, acc=False);
 # %%

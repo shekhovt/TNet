@@ -25,7 +25,7 @@ trained directly rather than as a side effect of preserving real-valued signals.
   family of straight-through and sampling-based estimators (`ST`, `ST-det`, `ZGR`,
   `GS`, `RF`, …) that recover known heuristics as special cases.
 - **Refined resource accounting** for compute, memory, and energy, correcting the
-  ACE-v2 metric for low-bit operands (see `energy/`).
+  ACE-v2 metric for low-bit operands (see `energy_ECML/`).
 
 ## Repository layout
 
@@ -38,7 +38,7 @@ trained directly rather than as a side effect of preserving real-valued signals.
 | `training.py` | Training loop, schedulers, distillation, logging. |
 | `setup_imagenet.py`, `setup_cifar.py`, `setup_mnist.py` | Dataset loaders (ImageNet via FFCV, CIFAR, MNIST). |
 | `data_profiler.py` | Activation/gradient logging for analysis. |
-| `energy/` | Energy & memory cost models and SOTA re-evaluation. |
+| `energy_ECML/` | Energy & memory cost models and SOTA re-evaluation, as published at ECML-PKDD 2026. Frozen to that paper: `python -m TNet.energy_ECML.report --all` regenerates its table, plots and records. |
 | `utilities/` | Op counting, weight loading, visualization, plotting helpers. |
 | `experiments/` | Scripts reproducing the paper's figures and tables. |
 
@@ -49,26 +49,27 @@ Requires Python 3.11+ and a CUDA-capable GPU.
 Clone the repository:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/shekhovt/TNet.git
 cd TNet
 ```
 
-### Recommended: virtual environment
+The scripts resolve their own package root by walking up to the nearest directory
+containing a `.git`, `.package` or `.vscode` marker, which is what lets them be run both
+as `python train.py` and as `python -m TNet.train`. A git clone therefore works as-is; if
+you unpack an archive instead, create an empty `.package` file at the repository root.
 
-Create a virtual environment in the **parent** directory (so one venv can be shared
-across related sub-projects) and install everything:
+### Recommended: virtual environment
 
 ```bash
 # from inside the repository root
-python3 -m venv ../.venv
-source ../.venv/bin/activate        # or use direnv with the provided .envrc
+python3 -m venv .venv
+source .venv/bin/activate
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
 ```
 
-Adjust the `cu128` index tag to match your CUDA version (e.g. `cu126`).
-The `.envrc` in the parent directory activates `.venv` automatically when
-[direnv](https://direnv.net/) is installed.
+Adjust the `cu128` index tag to match your CUDA version (e.g. `cu126`), or drop the
+`--index-url` line entirely to take the default PyPI build.
 
 `pip install -r requirements.txt` pulls in **everything TNet needs in one step**,
 including [`relimport`](https://pypi.org/project/relimport/) (installed from PyPI; no
@@ -89,9 +90,62 @@ pip install -r requirements.txt
 ### Core dependencies
 
 `torch` (≥ 2.7), `torchvision`, `numpy`, `scipy`, `matplotlib`, `pyparsing`,
-`transformers`, `Pillow`, `nvitop`, and `relimport`. ImageNet training additionally uses
-[FFCV](https://ffcv.io) for fast data loading (install separately); CIFAR/MNIST
-do not need it.
+`transformers`, `Pillow`, `nvitop`, and `relimport`. CIFAR and MNIST training,
+and the whole of `energy_ECML/`, need nothing beyond these; `pytest` runs the
+published test suite (`pytest energy_ECML/tests`).
+
+### ImageNet: FFCV (optional, built from source)
+
+ImageNet training uses [FFCV](https://ffcv.io) to read a `.beton`-cached copy of the
+dataset. FFCV has no current binary wheel — its last release predates the torch, numpy
+and numba versions used here — so it is built from source against a system OpenCV and
+libjpeg-turbo. It builds and runs cleanly all the same; no source patches are needed.
+
+Its pure-Python dependencies (`numba`, `terminaltables`, `pytorch_pfn_extras`,
+`fastargs`, `assertpy`, `tqdm`, `psutil`, `opencv-python-headless`) are already in
+`requirements.txt`, so only the C++ extension has to be built:
+
+```bash
+# System libraries the extension compiles against. On Debian/Ubuntu:
+#   sudo apt install pkg-config libopencv-dev libturbojpeg0-dev
+# On a module-based HPC system, load the equivalent modules instead, matching the
+# compiler generation your Python was built with.
+
+# from the repository root, with the virtual environment active:
+git clone --depth 1 https://github.com/libffcv/ffcv.git ffcv_build
+pip install --no-build-isolation --no-deps -e ./ffcv_build
+```
+
+`ffcv_build/` is ignored by this repository's `.gitignore`, so it can live inside the
+checkout without being picked up by git.
+
+`--no-deps` matters: FFCV's `setup.py` asks for `opencv-python`, whose wheel needs
+`libGL.so.1` and fails to import on a headless machine. `requirements.txt` installs
+`opencv-python-headless` instead — same `cv2` API, no GL dependency — and `--no-deps`
+stops pip replacing it. `--no-build-isolation` lets the build see the numpy already in
+your environment rather than fetching a different one.
+
+If OpenCV comes from a module or a non-default prefix, its libraries must be on
+`LD_LIBRARY_PATH` **when FFCV is imported**, not only when it is built; otherwise the
+extension loads and then fails on a missing `libopencv_*.so`.
+
+Verified with a full `DatasetWriter` → `.beton` → multi-worker `Loader` round-trip
+against Python 3.12.3, torch 2.13.0, numpy 1.26.4, numba 0.66.0, OpenCV 4.11.0 and
+libjpeg-turbo 3.0.1.
+
+#### Where the dataset cache is written
+
+`.beton` caches are written beside the dataset they were built from. Set
+`TNET_CACHE_ROOT` to redirect them somewhere writable and shared — useful when the
+dataset directory is read-only, or on a cluster where per-node scratch would rebuild the
+cache for every job:
+
+```bash
+export TNET_CACHE_ROOT=/path/to/shared/cache
+```
+
+The source path is mirrored underneath that root, so caches for different datasets do
+not collide.
 
 ## Quick start
 
@@ -134,10 +188,24 @@ python train.py --data CIFAR --net 'ResNet18()' \
   -W 2 -A 4 --method ST -n L --epochs 200 --batch_size 256 --MD
 ```
 
-Profile a network's compute/memory/energy cost (no data required):
+Profile a network's compute/memory/energy cost (no data required — it is shape
+arithmetic, and runs anywhere in a couple of seconds). `profile_networks.py` is
+the front door to the `energy_ECML/` model: any configuration that trains can be
+profiled by passing the same arguments.
 
 ```bash
-python profile_networks.py
+python profile_networks.py                                      # default configuration
+python profile_networks.py --net 'BiNealNet(m=1)' --method ST -A 2 -W 2
+python profile_networks.py --layers --net 'QResNet18(gate=Tower8s)' --method ST -A 2 -W 2
+```
+
+It prints the weight and feature memory moved per image with the energy of
+moving it, the compute energy, and the total. `--layers` adds the per-layer
+breakdown. For the whole published comparison — every method, the three plots,
+and a column-by-column diff against the paper's table:
+
+```bash
+python -m TNet.energy_ECML.report --all      # writes energy_ECML/results/
 ```
 
 ### Useful options
@@ -164,7 +232,9 @@ figures and tables — ImageNet-1k Pareto curves (`exp_imagenet1k.py`),
 architecture/width scaling (`exp_arch_scaling.py`), estimator comparisons
 (`exp_estimators.py`), convergence speed (`exp_convergence_speed.py`), and MNIST
 ablations (`exp_MNIST.py`). Each file lists the exact `train.py` argument strings
-used. Energy/memory re-evaluation of prior work lives in `energy/`.
+used. Energy/memory re-evaluation of prior work lives in `energy_ECML/`, whose
+generated table, plots and per-row provenance are in
+[`energy_ECML/results/README.md`](energy_ECML/results/README.md).
 
 `exp_arch_scaling.py` and `exp_imagenet1k.py` are the scripts that plot and
 summarize the results for the paper's main experiments. Once the relevant

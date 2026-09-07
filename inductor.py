@@ -50,7 +50,9 @@ torch._logging.set_logs(
 
 TORCHINDUCTOR_BENCHMARK_GEMM=1
 
-compile_args = dict(fullgraph=True, dynamic = True, backend = "inductor", options={'group_fusion':True, 'force_same_precision':False, 'disable_cpp_codegen':False, 'trace.graph_diagram':True, "triton.cudagraphs": False})
+compile_args = dict(fullgraph=True, dynamic = True, backend = "inductor", options={'group_fusion':True, 'disable_cpp_codegen':False, 'trace.graph_diagram':True, "triton.cudagraphs": False})
+# 'force_same_precision' was removed from torch._inductor.config on the RCI venv's torch 2.13
+# (see the RCI migration notes); it was already set to False here, so dropping the key changes nothing.
 
 torch._dynamo.config.capture_scalar_outputs = True
 torch._dynamo.config.inline_inbuilt_nn_modules = True

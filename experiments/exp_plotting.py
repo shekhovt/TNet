@@ -10,6 +10,8 @@
 #%%
 import relimport
 
+import os
+
 from adjustText import adjust_text
 
 from ..utilities.drawing import *
@@ -85,6 +87,18 @@ def sort_dicts_by_commonality(dict_list):
     # Step 3: Apply to each dict
     sorted_dicts = [sort_dict_by_key_frequency(d, key_counter) for d in dict_list]
     return sorted_dicts
+
+
+#: Root directory the experiment scripts write their figures into.  A figure destination is a
+#: *name* (``"scaling"``, ``"width"``), not a path, so no script names a directory outside the
+#: repository.  Set $TNET_FIG_DIR to send the figures somewhere else -- e.g. straight into a
+#: paper's figure directory -- without editing any of them.
+FIG_ROOT = os.environ.get('TNET_FIG_DIR', os.path.join('res', 'figures'))
+
+
+def fig_path(experiment, name):
+    """Where a figure called *name* belonging to *experiment* is written."""
+    return os.path.join(FIG_ROOT, experiment, name + '.pdf')
 
 
 def plot(lln, title=None, experiment=None, loc=0, Abottom=40, acc=True, bbox_to_anchor = None):
@@ -272,7 +286,7 @@ def plot(lln, title=None, experiment=None, loc=0, Abottom=40, acc=True, bbox_to_
         plt.xlabel('epochs')
         plt.draw()
         if experiment is not None:
-            path = experiment + "/" + what + '.pdf'
+            path = fig_path(experiment, what)
             force_path(path)
             savefig(path)
         plt.show()

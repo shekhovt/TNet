@@ -26,6 +26,7 @@ from matplotlib import cm
 from ..utilities.drawing import *
 from ..train import *
 from ..layers import Quant
+from .exp_plotting import fig_path
 
 # %%
 K = 3
@@ -74,7 +75,7 @@ for f in [f1, f2, f3, f4, f5]:
     plt.title(name)
     plt.draw()
 
-    path = '../Quant-GCPR25/exp/propmethods/' + name + '.pdf'
+    path = fig_path('propmethods', name)
     force_path(path)
     savefig(path)
     plt.show()

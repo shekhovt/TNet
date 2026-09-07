@@ -1,0 +1,29 @@
+# Repositories cloned for the traced entry path (energy_ECML/adapters/traced.py).
+#
+# The clones themselves are gitignored -- see energy_ECML/SOTA/.gitignore.  What is committed is this
+# file: the URL and the commit each entry was evaluated at, so a record's provenance names an
+# exact tree.  `bash energy_ECML/SOTA/pull.sh [<name>]` clones at the pinned commit.
+#
+# A method appears here only when its entry actually uses a repository.  A method described by
+# hand (energy_ECML/adapters/handwritten.py) does not need one, and for an architecture a paper states
+# completely, hand geometry is the more auditable of the two.
+
+[reactnet]
+url = "https://github.com/liuzechun/ReActNet"
+commit = "a6cd08d4605d94135faea6fd73354041e4130b52"   # 2021-11-11, the repository's only branch
+note = """ReActNet-A and ReActNet-BiReal18.  Both rows are regenerated through
+this repository rather than recovered -- the original profile_reactnet.pickle came from a
+notebook run that is not expected to be findable.  The models are the `2_step2` variants (weights
+and activations both binarized), which is what the published accuracies 69.4 / 65.5 are.  The
+model's 29.34M parameters match the published row's `29.3M`, which is what identifies this
+repository as the source of that row."""
+
+[torchvision]
+kind = "package"
+package = "torchvision"
+url = "https://github.com/pytorch/vision"
+note = """ResNet-18 and ResNet-50, for the full-precision/8-bit reference rows and for EWGS,
+which quantizes an unmodified ResNet-18.  This is an installed package rather than a clone, so
+there is no commit to pin here: `read_source` records the version actually imported when the
+record is built.  torchvision is the canonical reference implementation of these two networks and
+is what every paper in the comparison means by "ResNet-18"."""

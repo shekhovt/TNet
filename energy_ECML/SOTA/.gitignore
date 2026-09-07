@@ -1,0 +1,3 @@
+# Cloned third-party repositories for the traced entry path.  Their URLs and pinned commits are
+# in sources.toml; the trees themselves are not ours to commit.
+repos/
