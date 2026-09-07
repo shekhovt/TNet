@@ -17,6 +17,7 @@
 
     python -m TNet.energy_ECML.report --build          # evaluate every entry, write energy_ECML/results/
     python -m TNet.energy_ECML.report --plots          # the three figures (SVG for the README, PDF for TeX)
+    python -m TNet.energy_ECML.report --slide-plots    # the same three, wide, for a talk slide
     python -m TNet.energy_ECML.report --markdown       # energy_ECML/results/README.md
     python -m TNet.energy_ECML.report --latex          # energy_ECML/results/latex/*.tex
     python -m TNet.energy_ECML.report --check          # diff every row against the published table
@@ -43,9 +44,9 @@ import sys
 from collections import OrderedDict
 
 from .methods import ENTRIES, Entry
-from .model import evaluate
+from .model import evaluate, reprice_memory
 from .records import RESULTS_DIR, load_record, record_from, save_record
-from .spec import Technology
+from .spec import PAPER_TECHNOLOGY, Technology, bits_for
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG_DIR = os.path.join(RESULTS_DIR, "figures")
@@ -68,6 +69,32 @@ GROUP_TITLES = OrderedDict([
     ("tnet-dilated", "TNet with dilation"),
     ("tnet-width", "TNet, width scaling"),
 ])
+
+#: Named technologies a report can be priced under.  ``default`` is :class:`Technology`'s own
+#: defaults -- the A100's measured HBM.  ``paper`` is what the published table used: 150 pJ per
+#: bit, from a DDR4-on-a-desktop-CPU figure.  ``hbm-h200`` is the other measured GPU in the same
+#: source (Antepara et al., SC '25, Table 3, HBM totals: control plus datapath).  A record holds
+#: counts, so switching between them is a re-multiplication; see
+#: :func:`TNet.energy_ECML.model.reprice_memory`.
+TECHNOLOGIES = {
+    "default":  Technology(),
+    "paper":    PAPER_TECHNOLOGY,
+    "hbm-h200": Technology(name="hbm-h200", E_mem_on_chip_pJ_per_bit=11.68,
+                           E_mem_dram_pJ_per_bit=11.68,
+                           memory="HBM3, measured on a Grace+H200 (Antepara et al., SC '25)"),
+}
+
+#: Printed under the memory-movement and total-energy plots, which are the two the omission
+#: reaches: the model charges one pass over each tensor, and a real tiled execution re-reads what
+#: does not fit on chip.  Kept as one string so the wording cannot drift between the two.
+TILING_DISCLAIMER = (
+    "> **No accounting of tiling.** Memory traffic here is one pass over each tensor — weights "
+    "read once, feature maps read and written once — which is a lower bound. A real tiled "
+    "execution re-reads whatever does not fit on chip, so the true cost is higher, and by a "
+    "factor that need not be the same for every method: they differ widely in how much of their "
+    "traffic is weights and how much is activations. Modelling it is future work; "
+    "`Assumptions.memory_traffic=\"tiling_optimal\"` is the slot reserved for it."
+)
 
 PLOTS = [
     ("TEE", "tee", "Total Energy Estimate [$\\mu$J]", "Accuracy vs total energy"),
@@ -165,6 +192,10 @@ def check(fh=sys.stdout) -> int:
 
     Returns the number of columns that do not reproduce.  An unexplained column is a finding,
     not something to tune away -- the standing rule of ``energy_ECML/SOTA/README.md``.
+
+    The comparison is made at :data:`~TNet.energy_ECML.spec.PAPER_TECHNOLOGY`, whatever the
+    records are currently priced at: the question this answers is whether the *model* reproduces
+    the printed table, and that question is only meaningful at the printed table's constants.
     """
     cols = [
         ("params MB", "MB_weights", "params_MB", 1.0),
@@ -185,7 +216,11 @@ def check(fh=sys.stdout) -> int:
         if not e.published:
             continue
         n_rows += 1
-        t = rec["results"]["total"]
+        # The published table was priced at PAPER_TECHNOLOGY; the records are not any more.
+        # Re-price back before comparing, or every energy column reads as a disagreement when
+        # the only thing that changed is the memory constant.  Counts are untouched by this.
+        t = {**rec["results"]["total"],
+             **reprice_memory(rec["results"]["total"], PAPER_TECHNOLOGY)}
         bad = []
         for label, ours_key, pub_key, scale in cols:
             pub = e.published[pub_key]
@@ -210,10 +245,65 @@ def check(fh=sys.stdout) -> int:
     return n_bad
 
 
+# ------------------------------------------------------------------ reprice
+
+
+def reprice(technology: Technology | None = None, root: str | None = None,
+            verbose: bool = True) -> list[str]:
+    """Move every committed record onto ``technology`` **without rebuilding it**.
+
+    Each record's total, every stage and every layer carries its own bit counts, so the memory
+    energies and the totals are a re-multiplication of numbers already on disk
+    (:func:`TNet.energy_ECML.model.reprice_memory`).  Counts are not touched and ``CEE`` is not
+    touched: nothing here re-derives a shape, so no method's repository has to be cloned and no
+    result can drift.  ``provenance.technology`` is rewritten to say what the row is now priced
+    at.
+
+    This is the supported way to change the memory constants.  ``--build`` is for when the
+    *counting* changes.
+    """
+    from .records import iter_records, save_record
+    from dataclasses import asdict
+
+    tech = technology or Technology()
+    written = []
+    for path, rec in iter_records(root):
+        blocks = [rec["results"]["total"], *rec["results"].get("stages", {}).values(),
+                  *rec["results"].get("layers", [])]
+        for b in blocks:
+            b.update(reprice_memory(b, tech))
+        rec["provenance"]["technology"] = asdict(tech)
+        save_record(rec, path)
+        written.append(path)
+        if verbose:
+            print("  " + os.path.relpath(path, HERE))
+    return written
+
+
 # ------------------------------------------------------------------ plots
 
 
-def plots(formats=("svg", "pdf")) -> list[str]:
+#: The wide variant, for a talk slide.  The deck's text block is 803.6 pt = 11.13 in wide and
+#: 8.27 in tall, so the figure is drawn at its final size and included at ``width=\textwidth``
+#: with a scale factor of one: what ``scale`` sets here is what the projector shows.
+SLIDE_FIGSIZE = (11.1, 4.9)
+SLIDE_SCALE = 1.6
+
+
+def plots(formats=("svg", "pdf"), *, figsize=(6.4, 3.9), scale: float = 1.0,
+          suffix: str = "", margins: tuple[float, float] | None = None,
+          technology: Technology | None = None) -> list[str]:
+    """The three accuracy-versus-energy figures.
+
+    ``figsize``/``scale``/``suffix`` are what make the wide slide variant a second call rather
+    than a second figure: the arrangement, the data and the label solver are shared, only the
+    canvas and the type sizes differ.  See :func:`slide_plots`.
+
+    ``technology`` re-prices the committed records' memory counts before plotting, and appends its
+    name to ``suffix`` so the figure says which constants drew it.  Nothing is re-run: see
+    :func:`TNet.energy_ECML.model.reprice_memory`.  ``CEE`` is unaffected, so only the total- and
+    memory-energy figures move.
+    """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -223,9 +313,16 @@ def plots(formats=("svg", "pdf")) -> list[str]:
     rows = [r for r in _rows()
             if r["_entry"].plot and r["identity"]["accuracy"]["value"] is not None]
 
+    if technology is not None and technology != Technology():
+        suffix = f"{suffix}-{technology.name}"
+        rows = [{**r, "results": {**r["results"],
+                                  "total": {**r["results"]["total"],
+                                            **reprice_memory(r["results"]["total"], technology)}}}
+                for r in rows]
+
     written = []
     for key, stem, xlabel, title in PLOTS:
-        fig, ax = plt.subplots(figsize=(6.4, 3.9))
+        fig, ax = plt.subplots(figsize=figsize)
         by_family: dict[str, list] = {}
         for r in rows:
             by_family.setdefault(r["_entry"].family, []).append(r)
@@ -235,21 +332,30 @@ def plots(formats=("svg", "pdf")) -> list[str]:
             group = sorted(by_family[fam], key=lambda r: r["results"]["total"][f"{key}_pJ"])
             xs = [r["results"]["total"][f"{key}_pJ"] / 1e6 for r in group]
             ys = [r["identity"]["accuracy"]["value"] for r in group]
-            ax.plot(xs, ys, **family_style(fam))
+            ax.plot(xs, ys, **family_style(fam, scale))
             for r, x, y in zip(group, xs, ys):
                 pts.append((x, y))
                 texts.append(_point_label(r))
 
-        apply_axes_style(ax, xlabel)
-        ax.legend(fontsize=6.5, loc="lower right", framealpha=0.8, edgecolor="none")
+        apply_axes_style(ax, xlabel, scale=scale)
+        if margins is not None:                 # headroom, so the outermost labels are not clipped
+            ax.margins(*margins)
+        ax.legend(fontsize=6.5 * scale, loc="lower right", framealpha=0.8, edgecolor="none")
         fig.tight_layout(pad=0.6)
-        place_labels(ax, pts, texts)
+        place_labels(ax, pts, texts, fontsize=6.0 * scale, pad_px=9.0 * scale,
+                     marker_px=5.0 * scale)
         for ext in formats:
-            p = os.path.join(FIG_DIR, f"accuracy-vs-{stem}.{ext}")
+            p = os.path.join(FIG_DIR, f"accuracy-vs-{stem}{suffix}.{ext}")
             fig.savefig(p, dpi=200)
             written.append(p)
         plt.close(fig)
     return written
+
+
+def slide_plots(formats=("pdf",), technology: Technology | None = None) -> list[str]:
+    """The same three figures, sized for a full-width slide: ``accuracy-vs-<stem>-slide.pdf``."""
+    return plots(formats, figsize=SLIDE_FIGSIZE, scale=SLIDE_SCALE, suffix="-slide",
+                 margins=(0.05, 0.11), technology=technology)
 
 
 def _point_label(rec) -> str:
@@ -277,6 +383,58 @@ def _fmt(v, nd=0):
     return f"{v:,.{nd}f}"
 
 
+def _technology_table(tech: dict) -> list[str]:
+    """The constants every number below was priced at, as a table.
+
+    It leads the document because every energy in it is a count times one of these; a reader who
+    disagrees with a constant can stop here.  The values are read from the record's provenance,
+    not from :class:`Technology`'s defaults, so the table describes the records that exist rather
+    than what a fresh run would produce.
+    """
+    on, dram = tech["E_mem_on_chip_pJ_per_bit"], tech["E_mem_dram_pJ_per_bit"]
+    L = [
+        f"## Technology `{tech['name']}`",
+        "",
+        "Every energy below is a count times one of these constants.",
+        "",
+        "| | |",
+        "|---|---|",
+        f"| compute process | {tech.get('process', '—')} |",
+        f"| memory | {tech.get('memory', '—')} |",
+        "",
+        "| constant | value | prices |",
+        "|---|---|---|",
+        f"| E₁ | {tech['E1_pJ'] * 1000:.4g} fJ | one bit of carry-on addition — the gate cost "
+        "every compute figure is built from |",
+        f"| γ₀ | {tech['gamma_0']:g} × E₁ | one bit of register access |",
+        f"| memory, feature maps | {on:g} pJ/bit | activation reads and writes |",
+        f"| memory, weights | {dram:g} pJ/bit | weight reads |",
+        f"| accumulator width | {tech['K_after_conv']} states "
+        f"({bits_for(tech['K_after_conv'])} bit) | what pooling and the affine transform see |",
+        f"| affine coefficients | {tech['K_affine_coeffs']} states "
+        f"({bits_for(tech['K_affine_coeffs'])} bit) | scale and bias, per output channel |",
+        "",
+    ]
+    if on == dram:
+        L += ["Feature maps and weights are priced the same, so **memory is one constant**: "
+              f"{on:g} pJ per bit moved, whatever moves it. Measured hardware separates the two "
+              "(off-chip HBM costs about 8× on-chip L1), and this model does not — it charges "
+              "every bit as a single off-chip pass, so a tiled dataflow would come out cheaper "
+              "than these numbers say.", ""]
+    else:
+        L += [f"Feature maps and weights are priced differently here ({on:g} against {dram:g} "
+              "pJ/bit).", ""]
+    if tech["name"] != PAPER_TECHNOLOGY.name:
+        L += [f"> **These are not the constants of the printed paper.** It priced memory at "
+              f"{PAPER_TECHNOLOGY.E_mem_dram_pJ_per_bit:g} pJ/bit "
+              f"({PAPER_TECHNOLOGY.memory}); the memory figure above is a measured one, about "
+              f"{PAPER_TECHNOLOGY.E_mem_dram_pJ_per_bit / dram:.0f}× lower, so every total below "
+              "is correspondingly lower than the published table's. The compute constants are "
+              "unchanged. `Technology()` gives what is above; `PAPER_TECHNOLOGY` reproduces the "
+              "printed numbers exactly, and `tests/test_reference.py` pins them.", ""]
+    return L
+
+
 def markdown(path: str | None = None) -> str:
     path = path or os.path.join(RESULTS_DIR, "README.md")
     rows = _rows()
@@ -290,12 +448,10 @@ def markdown(path: str | None = None) -> str:
       "in `energy_ECML/methods/__init__.py` or the cost model in `energy_ECML/model.py` and "
       "regenerate.")
     A("")
-    tech = rows[0]["provenance"]["technology"]
     A(f"Generated {rows[0]['provenance']['generated']} from TNet "
-      f"`{rows[0]['provenance']['tnet_commit']}`, technology `{tech['name']}` "
-      f"(E₁ = {tech['E1_pJ']*1000:.4g} fJ per one-bit add, γ₀ = {tech['gamma_0']:g}, "
-      f"{tech['E_mem_on_chip_pJ_per_bit']:.0f} pJ per memory bit).")
+      f"`{rows[0]['provenance']['tnet_commit']}`.")
     A("")
+    L.extend(_technology_table(rows[0]["provenance"]["technology"]))
     A("Every row below is produced by the same cost model "
       "(`energy_ECML/model.py`), from a description of the network as layer geometry plus bit widths. "
       "The model is checked against the original energy script it replaces "
@@ -313,6 +469,9 @@ def markdown(path: str | None = None) -> str:
         A("")
         A(f"![{title}]({rel})")
         A("")
+        if key in ("MMEE", "TEE"):
+            A(TILING_DISCLAIMER)
+            A("")
 
     # ---- the table
     A("## All rows")
@@ -493,7 +652,12 @@ def latex(out_dir: str | None = None) -> list[str]:
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--build", action="store_true", help="evaluate every entry, write records")
+    ap.add_argument("--reprice", action="store_true",
+                    help="re-price every committed record at --technology, from the counts it "
+                         "already holds; no rebuild, no clones")
     ap.add_argument("--plots", action="store_true")
+    ap.add_argument("--slide-plots", action="store_true",
+                    help="the same three figures, wide and unscaled, for a talk slide")
     ap.add_argument("--markdown", action="store_true")
     ap.add_argument("--latex", action="store_true")
     ap.add_argument("--check", action="store_true")
@@ -502,18 +666,31 @@ def main(argv=None):
     ap.add_argument("--latex-dir", metavar="DIR",
                     help="write the LaTeX table here instead of results/latex/ "
                          "(e.g. straight into a paper's generated-input directory)")
+    ap.add_argument("--technology", metavar="NAME", default="default",
+                    choices=sorted(TECHNOLOGIES),
+                    help="memory constants the plots are priced at: "
+                         + ", ".join(sorted(TECHNOLOGIES)) + " (default: default)")
     ap.add_argument("--all", action="store_true")
     a = ap.parse_args(argv)
-    if not any((a.build, a.plots, a.markdown, a.latex, a.check, a.compare, a.all)):
+    if not any((a.build, a.reprice, a.plots, a.slide_plots, a.markdown, a.latex, a.check,
+                a.compare, a.all)):
         ap.print_help()
         return 0
 
     if a.all or a.build:
         print("building records")
         build()
+    tech = TECHNOLOGIES[a.technology]
+    if a.reprice:                           # deliberately not in --all: it rewrites the records
+        print(f"repricing records at {tech.name} ({tech.E_mem_dram_pJ_per_bit:g} pJ/bit):")
+        reprice(tech)
     if a.all or a.plots:
-        print("plots:")
-        for p in plots():
+        print(f"plots ({tech.name}):")
+        for p in plots(technology=tech):
+            print("  " + os.path.relpath(p, HERE))
+    if a.all or a.slide_plots:
+        print(f"slide plots ({tech.name}):")
+        for p in slide_plots(technology=tech):
             print("  " + os.path.relpath(p, HERE))
     if a.all or a.markdown:
         print("markdown: " + os.path.relpath(markdown(), HERE))

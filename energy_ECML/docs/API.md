@@ -29,12 +29,31 @@ for layer in e.layers[:3]:                           # per layer
     print(f"  {layer.name:28s} {layer.TEE/1e6:7.2f} uJ  (conv {layer.CEE_conv/1e6:.3f})")
 ```
 
-Re-pricing under a different technology does not re-run the counting:
+Re-pricing under a different technology does not re-run the counting. From specs:
 
 ```python
 on_chip = Technology(name="L1", E_mem_on_chip_pJ_per_bit=6, E_mem_dram_pJ_per_bit=6)
 print(evaluate(specs, on_chip).TEE / 1e6, "uJ")
 ```
+
+or, from a record that already exists, without building anything at all:
+
+```python
+from TNet.energy_ECML import reprice_memory, PAPER_TECHNOLOGY
+from TNet.energy_ECML.records import load_record
+
+rec = load_record("energy_ECML/results/TNet/tnet-width-m2.json")
+print(reprice_memory(rec["results"]["total"], PAPER_TECHNOLOGY)["TEE_pJ"] / 1e6, "uJ")
+```
+
+**Which constants are the default.** `Technology()` prices memory at **13.11 pJ/bit** — the A100's
+measured HBM total, from Antepara et al., SC '25. The **published paper** priced it at 150 pJ/bit,
+a desktop-CPU DDR4 figure, about eleven times higher; those constants are `PAPER_TECHNOLOGY`, they
+reproduce every printed number exactly, and `tests/test_reference.py` pins the model to them. The
+compute constants are the same in both. Every committed record is priced at the default, so the
+records no longer match the printed table — `report --check` re-prices to `PAPER_TECHNOLOGY`
+before comparing, because "does the model reproduce the paper" is a question at the paper's own
+constants.
 
 One configuration from the command line, from the repository root:
 
@@ -97,13 +116,26 @@ own repository. ReActNet-A has no hand geometry to check against and inherits th
 
 ```
 python -m TNet.energy_ECML.report --build      # evaluate every entry, write results/<method>/*.json
+                                  --reprice    # re-price every record at --technology, no rebuild
                                   --plots      # the three figures (SVG for markdown, PDF for TeX)
+                                  --slide-plots # the same three, wide, for a full-width talk slide
                                   --markdown   # results/README.md
                                   --latex      # results/latex/*.tex
                                   --check      # diff every row against the published table
                                   --compare    # write that diff up as a document
                                   --all
 ```
+
+`--slide-plots` writes `results/figures/accuracy-vs-<stem>-slide.pdf`: the same data, the same
+label solver, drawn on an 11.1 x 4.9 inch canvas with every type and marker size multiplied by
+`SLIDE_SCALE`. It is sized for a 4:3 talk slide whose text block is 803.6 pt wide, so a slide
+includes it at `width=\textwidth` with a scale factor of one and the sizes set here are what the
+projector shows.
+
+`--technology NAME` prices the figures at a different set of memory constants, appending the name
+to each filename. The counts come from the committed records and are not re-derived, so this needs
+no rebuild and no clone: see `report.TECHNOLOGIES` for what each name is and `model.reprice_memory`
+for what it does.
 
 Row order, group boundaries and display names come from the registry, not from sorting — a
 generated table that sorts itself always gets that wrong.

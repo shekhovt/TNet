@@ -1,11 +1,21 @@
 # `energy_ECML/` — energy evaluation for quantized networks
 
-Status: REVIEWED — 2026-09-07, built and checked with the author.
+Status: REVIEWED — 2026-09-07, built and checked with the author, **except the callout below**,
+which is DRAFT: it was written after that review, when the default memory constant changed.
+
+> **The default memory constant is not the published paper's.** `Technology()` charges 13.11 pJ
+> per bit of memory traffic — the measured HBM total of an NVIDIA A100 (Antepara et al., SC '25).
+> The paper charged 150 pJ/bit, a desktop-CPU DDR4 figure about eleven times higher, so every
+> energy here is correspondingly lower than the printed table's. The published constants are
+> `PAPER_TECHNOLOGY`; they reproduce the printed numbers exactly, `tests/test_reference.py` pins
+> the model to them, and `report --check` compares against the paper at them. Compute constants
+> are unchanged. The records were moved by re-multiplying their stored counts
+> (`report --reprice`) — nothing was rebuilt and no count changed.
 
 A network is described as **layer geometry plus quantizer widths**; the model turns that into
 **counts** (bits moved, gate operations by width), and a second, trivial step turns counts into
-**joules**. Every row of the paper's comparison table and every point on its energy plots is
-produced by this one path.
+**joules**. Every row of the comparison table and every point on the energy plots is produced by
+this one path — and so is every row of the paper's, at `PAPER_TECHNOLOGY`.
 
 **The results are in [`results/README.md`](results/README.md)** — the full table of every method
 and configuration, and the three accuracy-versus-energy plots. It reports what this model computes

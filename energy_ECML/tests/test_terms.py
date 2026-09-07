@@ -226,7 +226,8 @@ def test_pricing_is_linear_in_the_constants():
     specs = [one_conv()]
     a = evaluate(specs)
     b = evaluate(specs, Technology(E1_pJ=2 * TECH.E1_pJ))
-    c = evaluate(specs, Technology(E_mem_on_chip_pJ_per_bit=300.0))
+    c = evaluate(specs, Technology(
+        E_mem_on_chip_pJ_per_bit=2 * TECH.E_mem_on_chip_pJ_per_bit))
     assert b.CEE == pytest.approx(2 * a.CEE)
     assert b.MMEE == a.MMEE
     assert c.MMEE_features == pytest.approx(2 * a.MMEE_features)

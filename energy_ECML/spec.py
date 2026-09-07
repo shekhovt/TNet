@@ -74,6 +74,7 @@ __all__ = [
     "LayerEnergy",
     "StageEnergy",
     "NetworkEnergy",
+    "PAPER_TECHNOLOGY",
     "bits_for",
     "states_for",
 ]
@@ -115,17 +116,25 @@ def states_for(b: int) -> int:
 
 @dataclass(frozen=True)
 class Technology:
-    """Energy constants of the target process node.
+    """Energy constants of the target hardware.
 
-    The defaults are the constants the published table was computed with, so
-    ``Technology()`` reproduces the paper.  They are read from
-    ``energy_ECML/evaluate_networks.py:net_calc_energy_stats`` (7 nm branch), not recalled.
+    **The defaults are not the published paper's.**  The compute constants are -- they are read
+    from ``energy_ECML/evaluate_networks.py:net_calc_energy_stats`` (7 nm branch), not recalled --
+    but the memory constant is now a *measured* one: 13.11 pJ per bit of HBM traffic on an NVIDIA
+    A100.  The paper priced memory at 150 pJ/bit from a DDR4-on-a-desktop-CPU figure, roughly
+    eleven times higher.  Those constants are kept, and reproduce the printed table exactly, as
+    :data:`PAPER_TECHNOLOGY`.
 
     Because counting is separated from pricing, a record stores counts and a
-    different ``Technology`` is applied by re-multiplication, without re-running anything.
+    different ``Technology`` is applied by re-multiplication, without re-running anything --
+    which is how the committed records were moved onto these constants without being rebuilt.
+    See :func:`TNet.energy_ECML.model.reprice_memory`.
     """
 
-    name: str = "7nm"
+    name: str = "hbm-a100"
+    """Short, filename-safe identifier.  It ends up in a record's provenance and in the name of
+    every figure priced under it, so it is a slug, not a sentence -- :attr:`process` and
+    :attr:`memory` are where the prose goes."""
 
     E1_pJ: float = 0.03 / 32.0
     """Energy of a one-bit carry-on addition circuit, in picojoules.
@@ -144,17 +153,26 @@ class Technology:
     ``gamma_0 = 1``; the default here is what the table used, not what the sentence suggests.
     """
 
-    E_mem_on_chip_pJ_per_bit: float = 150.0
+    E_mem_on_chip_pJ_per_bit: float = 13.11
     """Energy per bit of feature-map (activation) traffic.
 
-    Appendix: *"The cost of memory accesses was calculated by multiplying the amount of accessed
-    memory by 150 pJ per bit, a typical value modern CPUs use when accessing DDR4 memory."*  The
-    name says "on chip" because that is the variable name in the reference implementation; the
-    value it was given is the DDR figure, and activations and weights are therefore priced the
-    same today.
+    The default is *measured*: the A100's HBM total, control (8.47) plus datapath (4.64), from
+    Antepara et al., *Benchmark-driven Models for Energy Analysis and Attribution of
+    GPU-Accelerated Supercomputing*, SC '25, Table 3.  The HBM3 part they measure (a Grace+H200)
+    is 11.68 pJ/bit; their on-chip levels are 4.71 (L2) and 1.59 (L1).
+
+    The published table instead used 150 pJ/bit -- appendix: *"The cost of memory accesses was
+    calculated by multiplying the amount of accessed memory by 150 pJ per bit, a typical value
+    modern CPUs use when accessing DDR4 memory."*  See :data:`PAPER_TECHNOLOGY`.
+
+    The name says "on chip" because that is the variable name in the reference implementation.
+    The value it is given is an *off-chip* figure, here as in the paper: this model charges every
+    bit as one off-chip pass and does not model tiling or caching, so activations and weights are
+    priced the same.  Measured hardware separates them by 8x (HBM against L1); that this model
+    does not is an assumption, not a measurement.
     """
 
-    E_mem_dram_pJ_per_bit: float = 150.0
+    E_mem_dram_pJ_per_bit: float = 13.11
     """Energy per bit of weight traffic.  See :attr:`E_mem_on_chip_pJ_per_bit`."""
 
     K_after_conv: int = 256
@@ -177,6 +195,17 @@ class Technology:
     uniform across the network and no width policy can change it.
     """
 
+    process: str = "7 nm CMOS"
+    """The compute process node, in prose.  Descriptive: nothing computes with it."""
+
+    memory: str = "HBM2e, measured on an NVIDIA A100 (Antepara et al., SC '25)"
+    """The memory technology the per-bit constants describe, in prose.  Descriptive.
+
+    It exists because "13.11 pJ/bit" is meaningless without it: the same model over the same
+    counts gives an answer an order of magnitude different for DDR4 across a socket and for HBM on
+    package, and a reader of a generated table has to be told which one they are looking at.
+    """
+
     @property
     def b_after_conv(self) -> int:
         """:attr:`K_after_conv` in **bits**."""
@@ -191,6 +220,20 @@ class Technology:
 # ----------------------------------------------------------------------------------------------
 # Modelling policy
 # ----------------------------------------------------------------------------------------------
+
+
+#: The constants the **published** ECML-PKDD 2026 table was computed with.  Passing this to
+#: :func:`~TNet.energy_ECML.model.evaluate` reproduces every printed number; the default
+#: :class:`Technology` no longer does, because its memory constant was replaced by a measured one.
+#: ``tests/test_reference.py`` pins the paper's numbers through this object, which is what keeps
+#: the change to the default from quietly moving the oracle.
+PAPER_TECHNOLOGY = Technology(
+    name="paper-ddr4",
+    E_mem_on_chip_pJ_per_bit=150.0,
+    E_mem_dram_pJ_per_bit=150.0,
+    process="7 nm CMOS",
+    memory="DDR4-class, from a desktop-CPU measurement (Lam, Chips and Cheese, 2025)",
+)
 
 
 @dataclass(frozen=True)

@@ -19,12 +19,18 @@ trained directly rather than as a side effect of preserving real-valued signals.
 
 ![Top-1 accuracy versus total energy per image on ImageNet-1k](energy_ECML/results/figures/accuracy-vs-tee.svg)
 
-**Updated and Extended Evaluation: Accuracy vs Total Energy Estimate.** Total energy per
-image is weight and feature-map memory movement plus compute, priced at 7 nm. Every point
-comes out of the same cost model, evaluated from each network's layer geometry and bit
-widths rather than transcribed from its paper, so the methods are compared on one axis.
-At about 70 % top-1, TNet costs 5.2 mJ per image against 77.4 mJ for a full-precision
-ResNet-18 and 7.2 mJ for the strongest binary baseline at the same accuracy.
+**Updated and Extended Evaluation: Accuracy vs Total Energy Estimate (`hbm-a100`).** Total
+energy per image is weight and feature-map memory movement plus compute, with compute priced
+at 7 nm and memory at 13.11 pJ per bit — the measured HBM figure of an NVIDIA A100, which is
+what `hbm-a100` names. Every point comes out of the same cost model, evaluated from each
+network's layer geometry and bit widths rather than transcribed from its paper, so the methods
+are compared on one axis. At about 70 % top-1, TNet costs 487 µJ per image against 8510 µJ for
+a full-precision ResNet-18 and 656 µJ for the strongest binary baseline at the same accuracy.
+
+> **No accounting of tiling.** Memory traffic is one pass over each tensor — weights read once,
+> feature maps read and written once — which is a lower bound. A real tiled execution re-reads
+> whatever does not fit on chip, so the true cost is higher, by a factor that need not be the same
+> for every method. Modelling it is future work.
 
 The other two views — accuracy against compute alone and against memory movement — and
 the full table, with each row's memory and energy split out, are in

@@ -33,6 +33,7 @@ import pytest
 
 from ..adapters import handwritten as hw
 from ..model import evaluate
+from ..spec import PAPER_TECHNOLOGY
 
 F32 = 2 ** 32
 
@@ -53,7 +54,7 @@ ORACLE = {
 def test_port_reproduces_the_oracle(name):
     """Every column, at the precision the oracle table printed it."""
     kw, (p_MB, p_uJ, f_MB, f_uJ, c_uJ, t_uJ) = ORACLE[name]
-    e = evaluate(hw.xnor_alexnet(**kw))
+    e = evaluate(hw.xnor_alexnet(**kw), PAPER_TECHNOLOGY)
     assert round(e.MB_weights, 2) == p_MB
     assert round(e.MMEE_weights / 1e6) == p_uJ
     assert round(e.MB_features, 2) == f_MB
@@ -95,8 +96,8 @@ def test_activations_are_stored_at_one_bit_not_capped_at_eight():
     memory -- unlike a Bi-Real style network, where the 8-bit cap exists because the real-valued
     skip path means the tensors are not binary whatever the label says.
     """
-    binary = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2))
-    capped = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2, K_stored=256))
+    binary = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2), PAPER_TECHNOLOGY)
+    capped = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2, K_stored=256), PAPER_TECHNOLOGY)
     assert round(binary.MMEE_features / 1e6) == 442
     assert round(capped.MMEE_features / 1e6) == 997
     # Either way the row is dominated by weight traffic, which is identical in both.
@@ -111,8 +112,8 @@ def test_the_house_convention_input_costs_this_much():
     read.  Every other baseline reads an 8-bit input instead.  The gap is +1.7 %
     and it is entirely in the two branches' first convolution, which each read the whole image.
     """
-    oracle = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2, K_in_first=8))
-    house = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2))
+    oracle = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2, K_in_first=8), PAPER_TECHNOLOGY)
+    house = evaluate(hw.xnor_alexnet(K_A_operand=2, K_W=2), PAPER_TECHNOLOGY)
     assert round(oracle.TEE / 1e6) == 13661
     assert round(house.TEE / 1e6) == 13892
     assert house.TEE / oracle.TEE == pytest.approx(1.017, abs=5e-4)

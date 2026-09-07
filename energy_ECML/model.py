@@ -60,6 +60,7 @@ __all__ = [
     "count_layer",
     "count",
     "price",
+    "reprice_memory",
     "evaluate",
 ]
 
@@ -301,6 +302,28 @@ def price(c: Counts, tech: Technology = Technology()) -> dict:
         MMEE_weights=c.bits_read_weight * tech.E_mem_dram_pJ_per_bit,
         MMEE_features=(c.bits_read_act + c.bits_written_act) * tech.E_mem_on_chip_pJ_per_bit,
     )
+
+
+def reprice_memory(totals: dict, tech: Technology) -> dict:
+    """Memory energies for counts a record already holds, under a different ``Technology``.
+
+    ``totals`` is a record's ``results["total"]`` block: it carries the bit counts alongside the
+    energies they were priced at.  Only the memory terms depend on the memory constants, so
+    changing them is a re-multiplication -- nothing is re-run, and a traced method does not need
+    its repository cloned again.  ``CEE_pJ`` is carried through unchanged, which is what makes
+    the returned ``TEE_pJ`` correct.
+
+    Returns the four figures that change, in picojoules, ready to be merged into a copy of
+    ``totals``.
+    """
+    w = totals["bits_read_weight"] * tech.E_mem_dram_pJ_per_bit
+    f = (totals["bits_read_act"] + totals["bits_written_act"]) * tech.E_mem_on_chip_pJ_per_bit
+    return {
+        "MMEE_weights_pJ": w,
+        "MMEE_features_pJ": f,
+        "MMEE_pJ": w + f,
+        "TEE_pJ": totals["CEE_pJ"] + w + f,
+    }
 
 
 # ----------------------------------------------------------------------------------------------

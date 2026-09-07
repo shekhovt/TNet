@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import pytest
 
-from ..spec import Assumptions, Technology
+from ..spec import Assumptions, PAPER_TECHNOLOGY, Technology
 from ..model import evaluate
 from . import geometry as hw
 from .reference import run_reference
@@ -77,7 +77,9 @@ HAND_CASES = {
 
 def _compare(specs, name):
     ref = run_reference(specs, name)
-    e = evaluate(specs, Technology(), LEGACY, name=name)
+    # PAPER_TECHNOLOGY, not the default: the oracle hardcodes the published 150 pJ/bit,
+    # so this comparison must be made at the constants the paper was priced with.
+    e = evaluate(specs, PAPER_TECHNOLOGY, LEGACY, name=name)
 
     # Memory is an exact integer number of bits on both sides.
     assert int(e.counts.bits_read_weight) == ref["bits_read_weight"]
@@ -117,7 +119,7 @@ def test_totals_are_the_sum_of_the_layers():
     relative tolerance rather than for equality: floating-point addition is not associative.
     """
     specs = hw.resnet18(4, 4)
-    e = evaluate(specs, assumptions=LEGACY)
+    e = evaluate(specs, PAPER_TECHNOLOGY, assumptions=LEGACY)
     by_layer = sum(l.CEE for l in e.layers)
     by_stage = sum(s.CEE for s in e.stages.values())
     assert abs(by_layer - e.CEE) <= 1e-9 * e.CEE
@@ -135,8 +137,8 @@ def test_skip_reads_are_not_a_reference_case():
     thing worth pinning, because it is the size of the gap between the paper's sentence and the
     paper's numbers.
     """
-    plain = evaluate(hw.resnet18(256, 256), assumptions=LEGACY)
-    skips = evaluate(hw.resnet18(256, 256, skip_reads=True), assumptions=LEGACY)
+    plain = evaluate(hw.resnet18(256, 256), PAPER_TECHNOLOGY, assumptions=LEGACY)
+    skips = evaluate(hw.resnet18(256, 256, skip_reads=True), PAPER_TECHNOLOGY, assumptions=LEGACY)
     extra = skips.counts.bits_read_act - plain.counts.bits_read_act
     assert extra == 7426048, extra
     # Measured on ResNet-18 8/8: +42.5 % activation reads, +23.0 % feature memory,

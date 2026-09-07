@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import pytest
 
-from ..spec import Assumptions, LayerSpec, Technology
+from ..spec import PAPER_TECHNOLOGY, Assumptions, LayerSpec, Technology
 from ..model import evaluate
 from . import geometry as hw
 
@@ -56,9 +56,9 @@ def test_split_widths_equal_the_two_run_composition(K_A, K_W):
     compute_run = _as_single_width(split, K_A)      # K_in = the operand width
     memory_run = _as_single_width(split, 256)       # K_in = the stored width
 
-    one = evaluate(split, assumptions=LEGACY)
-    a = evaluate(compute_run, assumptions=LEGACY)
-    b = evaluate(memory_run, assumptions=LEGACY)
+    one = evaluate(split, PAPER_TECHNOLOGY, assumptions=LEGACY)
+    a = evaluate(compute_run, PAPER_TECHNOLOGY, assumptions=LEGACY)
+    b = evaluate(memory_run, PAPER_TECHNOLOGY, assumptions=LEGACY)
 
     # compute (and the accumulator width it carries) comes from the operand run
     assert one.CEE == pytest.approx(a.CEE, rel=1e-12)
@@ -79,7 +79,7 @@ def test_reactnet_bireal18_convention_in_one_run():
     classifier and downsample convolutions, Bi-Real average-pool downsample.
     """
     specs = hw.resnet18(2, 2, K_ds_W=256, K_ds_A=256, bireal_downsample=True)
-    e = evaluate(specs, assumptions=LEGACY)
+    e = evaluate(specs, PAPER_TECHNOLOGY, assumptions=LEGACY)
     # published row: 11.7M / 2.0 / 2494 | 3.6 / 4440 | 43 | 6977
     assert round(e.MB_weights, 1) == 2.0
     assert round(e.MMEE_weights / 1e6) == 2494
@@ -89,16 +89,16 @@ def test_reactnet_bireal18_convention_in_one_run():
 
 
 def test_stored_width_alone_moves_memory_and_not_compute():
-    a = evaluate(hw.resnet18(4, 4), assumptions=LEGACY)
-    b = evaluate(hw.resnet18(4, 4, K_stored=16), assumptions=LEGACY)
+    a = evaluate(hw.resnet18(4, 4), PAPER_TECHNOLOGY, assumptions=LEGACY)
+    b = evaluate(hw.resnet18(4, 4, K_stored=16), PAPER_TECHNOLOGY, assumptions=LEGACY)
     assert b.counts.bits_read_act < a.counts.bits_read_act
     assert b.counts.bits_written_act < a.counts.bits_written_act
     assert b.counts.bits_read_weight == a.counts.bits_read_weight
 
 
 def test_operand_width_alone_moves_compute_and_not_activation_memory():
-    a = evaluate(hw.resnet18(4, 4), assumptions=LEGACY)
-    b = evaluate(hw.resnet18(16, 4), assumptions=LEGACY)
+    a = evaluate(hw.resnet18(4, 4), PAPER_TECHNOLOGY, assumptions=LEGACY)
+    b = evaluate(hw.resnet18(16, 4), PAPER_TECHNOLOGY, assumptions=LEGACY)
     assert b.CEE > a.CEE
     assert b.counts.bits_read_act == a.counts.bits_read_act
     assert b.counts.bits_written_act == a.counts.bits_written_act
@@ -114,7 +114,7 @@ def test_quantizing_the_downsample_convolutions_is_worth_this_much():
     measured number rather than an assertion.
     """
     for K_A, K_W, want in [(2, 2, 1.025), (4, 4, 1.018), (16, 16, 1.009)]:
-        plain = evaluate(hw.resnet18(K_A, K_W), assumptions=LEGACY)
-        at8 = evaluate(hw.resnet18(K_A, K_W, K_ds_W=256, K_ds_A=256), assumptions=LEGACY)
+        plain = evaluate(hw.resnet18(K_A, K_W), PAPER_TECHNOLOGY, assumptions=LEGACY)
+        at8 = evaluate(hw.resnet18(K_A, K_W, K_ds_W=256, K_ds_A=256), PAPER_TECHNOLOGY, assumptions=LEGACY)
         assert at8.TEE > plain.TEE
         assert round(at8.TEE / plain.TEE, 3) == want, (K_A, K_W, at8.TEE / plain.TEE)

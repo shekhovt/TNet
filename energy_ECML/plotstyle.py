@@ -52,23 +52,30 @@ FAMILY = {
 }
 
 
-def family_style(name: str) -> dict:
+def family_style(name: str, scale: float = 1.0) -> dict:
+    """Line/marker style for a family.
+
+    ``scale`` multiplies every size.  It exists because the same figure is drawn twice: once at
+    paper size, and once wide and unscaled for a talk slide, where a 6 pt marker on an 11 inch
+    canvas would vanish.
+    """
     colour, marker, filled, linestyle, label, z = FAMILY.get(name, FAMILY["other"])
     return dict(
         color=colour, marker=marker, linestyle=linestyle, label=label, zorder=z,
         markerfacecolor=colour if filled else "white",
-        markeredgecolor=colour, markeredgewidth=1.4, markersize=6, linewidth=1.4, alpha=0.95,
+        markeredgecolor=colour, markeredgewidth=1.4 * scale, markersize=6 * scale,
+        linewidth=1.4 * scale, alpha=0.95,
     )
 
 
-def apply_axes_style(ax, xlabel: str, ylabel: str = "Accuracy [%]"):
+def apply_axes_style(ax, xlabel: str, ylabel: str = "Accuracy [%]", scale: float = 1.0):
     ax.set_xscale("log")
-    ax.set_xlabel(xlabel, fontsize=9)
-    ax.set_ylabel(ylabel, fontsize=9)
-    ax.grid(True, which="both", linewidth=0.4, alpha=0.35)
-    ax.tick_params(labelsize=8)
+    ax.set_xlabel(xlabel, fontsize=9 * scale)
+    ax.set_ylabel(ylabel, fontsize=9 * scale)
+    ax.grid(True, which="both", linewidth=0.4 * scale, alpha=0.35)
+    ax.tick_params(labelsize=8 * scale)
     for s in ax.spines.values():
-        s.set_linewidth(0.6)
+        s.set_linewidth(0.6 * scale)
 
 
 # ------------------------------------------------------------------ label placement
@@ -83,7 +90,8 @@ _CANDIDATES = [
 ]
 
 
-def place_labels(ax, points, texts, *, pad_px: float = 9.0, fontsize: float = 6.0):
+def place_labels(ax, points, texts, *, pad_px: float = 9.0, fontsize: float = 6.0,
+                 marker_px: float = 5.0):
     """Attach ``texts`` to ``points`` avoiding overlaps, deterministically.
 
     ``points`` are data coordinates.  Each label is tried at a fixed list of offsets around its
@@ -98,7 +106,7 @@ def place_labels(ax, points, texts, *, pad_px: float = 9.0, fontsize: float = 6.
     renderer = fig.canvas.get_renderer()
 
     order = sorted(range(len(points)), key=lambda i: (points[i][0], points[i][1]))
-    marker_boxes = [_px_box(ax, p, 5.0, 5.0) for p in points]
+    marker_boxes = [_px_box(ax, p, marker_px, marker_px) for p in points]
     placed: list[tuple] = []
     x0, y0, x1, y1 = _axes_px_box(ax)
 

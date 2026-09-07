@@ -48,22 +48,24 @@ from .spec import (
     LayerEnergy,
     LayerSpec,
     NetworkEnergy,
+    PAPER_TECHNOLOGY,
     PoolSpec,
     StageEnergy,
     Technology,
     bits_for,
     states_for,
 )
-from .model import count, count_layer, dot_product_gates, evaluate, kappa, price
+from .model import (count, count_layer, dot_product_gates, evaluate, kappa, price,
+                    reprice_memory)
 from .records import iter_records, load_record, record_from, save_record
 
 __all__ = [
     # description
-    "Technology", "Assumptions", "LayerSpec", "PoolSpec",
+    "Technology", "PAPER_TECHNOLOGY", "Assumptions", "LayerSpec", "PoolSpec",
     # results
     "Counts", "LayerEnergy", "StageEnergy", "NetworkEnergy",
     # the model
-    "evaluate", "count", "count_layer", "price", "dot_product_gates", "kappa", "bits_for", "states_for",
+    "evaluate", "count", "count_layer", "price", "reprice_memory", "dot_product_gates", "kappa", "bits_for", "states_for",
     # records
     "record_from", "save_record", "load_record", "iter_records",
 ]

@@ -19,6 +19,17 @@ Counting is separated from pricing. The model produces **counts** — bits moved
 width — and a second, trivial step multiplies them by a `Technology`. Changing the technology is a
 re-multiplication, not a re-run, and a record stores the counts so it can be re-priced later.
 
+That separation was used: **the default memory constant is no longer the paper's.** The paper
+charged 150 pJ per bit, described in its appendix as *"a typical value modern CPUs use when
+accessing DDR4 memory"*. `Technology()` now charges **13.11 pJ/bit**, the measured HBM total
+(control plus datapath) of an NVIDIA A100 in Antepara et al., *Benchmark-driven Models for Energy
+Analysis and Attribution of GPU-Accelerated Supercomputing*, SC '25, Table 3. Every committed
+record was moved onto it by re-multiplication, with no count and no compute figure touched
+(`report --reprice`). The published constants are `PAPER_TECHNOLOGY` and still reproduce the
+printed table exactly. What did not change is the *policy* below: every bit is still charged as one
+off-chip pass, so the single constant applies to weights and feature maps alike — measured hardware
+separates those by about 8× (HBM against L1), and this model does not.
+
 | quantity | what it is |
 |---|---|
 | `CEE`  | Compute Energy Estimate: dot products, pooling, affine, requantization |
