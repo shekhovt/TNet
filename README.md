@@ -4,12 +4,29 @@ Reference implementation for the paper
 
 > **Scalable Binary-Quantized Neural Networks for Energy-Efficient Vision**
 > Alexander Shekhovtsov and Štěpán Obdržálek, Czech Technical University in Prague.
-> ECML-PKDD 2026 (research track).
+> [ECML-PKDD 2026](https://ecmlpkdd.org/2026/) (research track).
 
 A unified framework for training vision models with **integer weights and
 activations** on a fixed quantization grid `{0, 1, …, K-1}` — no adaptive shift or
 scale — that scales seamlessly down to **binary** (`K = 2`). Quantized weights are
 trained directly rather than as a side effect of preserving real-valued signals.
+
+![Top-1 accuracy versus total energy per image on ImageNet-1k](energy_ECML/results/figures/accuracy-vs-tee.svg)
+
+Top-1 accuracy against total energy per image — weight and feature-map memory movement
+plus compute, priced at 7 nm. Every point comes out of the same cost model, evaluated
+from each network's layer geometry and bit widths rather than transcribed from its paper,
+so the methods are compared on one axis. At about 70 % top-1, TNet costs 5.2 mJ per image
+against 77.4 mJ for a full-precision ResNet-18 and 7.2 mJ for the strongest binary
+baseline at the same accuracy.
+
+The other two views — accuracy against compute alone and against memory movement — and
+the full table, with each row's memory and energy split out, are in
+[`energy_ECML/results/README.md`](energy_ECML/results/README.md). What the model assumes
+is in [`energy_ECML/docs/methodology.md`](energy_ECML/docs/methodology.md), and how each
+prior method was placed on the same axis is in
+[`energy_ECML/SOTA/`](energy_ECML/SOTA/README.md). All of it regenerates with
+`python -m TNet.energy_ECML.report --all`.
 
 ## Highlights
 
@@ -249,9 +266,13 @@ corresponding figures and summary tables.
   title     = {Scalable Binary-Quantized Neural Networks for Energy-Efficient Vision},
   author    = {Shekhovtsov, Alexander and Obdr{\v{z}}{\'a}lek, {\v{S}}t{\v{e}}p{\'a}n},
   booktitle = {Machine Learning and Knowledge Discovery in Databases (ECML-PKDD)},
-  year      = {2026}
+  year      = {2026},
+  url       = {https://ecmlpkdd.org/2026/}
 }
 ```
+
+The proceedings volume, pages and DOI are not assigned yet; this entry will be updated
+once they are.
 
 ## License
 
