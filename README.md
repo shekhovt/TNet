@@ -6,7 +6,7 @@ Reference implementation for the paper
 > Alexander Shekhovtsov and Štěpán Obdržálek, Czech Technical University in Prague.
 > [ECML-PKDD 2026](https://ecmlpkdd.org/2026/) (research track).
 > *Machine Learning and Knowledge Discovery in Databases. Research Track*, Lecture Notes
-> in Computer Science, Springer Nature Switzerland, Cham, pp. 253–270.
+> in Computer Science, vol. 16943, Springer Nature Switzerland, Cham, pp. 253–270.
 > doi:[10.1007/978-3-032-37664-0_15](https://doi.org/10.1007/978-3-032-37664-0_15)
 > (published version; subscription required).
 
@@ -273,6 +273,7 @@ corresponding figures and summary tables.
   author    = {Shekhovtsov, Alexander and Obdr{\v{z}}{\'a}lek, {\v{S}}t{\v{e}}p{\'a}n},
   booktitle = {Machine Learning and Knowledge Discovery in Databases. Research Track},
   series    = {Lecture Notes in Computer Science},
+  volume    = {16943},
   pages     = {253--270},
   publisher = {Springer Nature Switzerland},
   address   = {Cham},
@@ -282,9 +283,9 @@ corresponding figures and summary tables.
 }
 ```
 
-The Lecture Notes in Computer Science volume number is not yet filled in; everything else
-is Crossref's record for the DOI. A free authors' version of the PDF is on the
-[project page](https://cmp.felk.cvut.cz/~shekhovt/TNet/).
+Fields are Crossref's record for the DOI, plus the volume number from the proceedings
+front matter (issued as LNAI 16943, a subseries of LNCS). A free authors' version of the
+PDF is on the [project page](https://cmp.felk.cvut.cz/~shekhovt/TNet/).
 
 ## License
 
